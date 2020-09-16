@@ -30,13 +30,16 @@ public class SimpleJobConfiguration {
     /***
      * Tasklet 하나와 Reader & Processor & Writer 한 묶음이 같은 레벨이다.
      * 그래서 Reader & Processor가 끝나고 Tasklet으로 마무리 짓는 등으로 만들 수 없다.
+     * Spring Batch는 동일한 Job Parameter로 성공한 기록이 있을때만 재수행이 안된다.
      */
     @Bean
     @JobScope
     public Step simpleStep1(@Value("#{jobParameters[requestDate]}") String requestDate) {
         return stepBuilderFactory.get("simpleStep1") // simpleStep1이라는 Step을 생성하겠다
                 .tasklet(((contribution, chunkContext) -> { // Step안에서 단일로 수행될 커텀한 기능들을 선언할 때 사용
-                    throw new IllegalArgumentException("step1에서 실패합니다.");
+                    log.info(">>>>> This is Step1");
+                    log.info(">>>>> requestDate = {}", requestDate);
+                    return RepeatStatus.FINISHED;
                 }))
                 .build();
     }
