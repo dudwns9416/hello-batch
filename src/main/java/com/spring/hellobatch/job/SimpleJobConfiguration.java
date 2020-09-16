@@ -5,8 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
+import org.springframework.batch.core.configuration.annotation.JobScope;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.repeat.RepeatStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -20,7 +22,8 @@ public class SimpleJobConfiguration {
     @Bean
     public Job simpleJob() {
         return jobBuilderFactory.get("simpleJob") // simpleJob이라는 Job을 생성하겠다
-                .start(simpleStep1())
+                .start(simpleStep1(null))
+                .next(simpleStep2(null))
                 .build();
     }
 
@@ -29,10 +32,22 @@ public class SimpleJobConfiguration {
      * 그래서 Reader & Processor가 끝나고 Tasklet으로 마무리 짓는 등으로 만들 수 없다.
      */
     @Bean
-    public Step simpleStep1() {
+    @JobScope
+    public Step simpleStep1(@Value("#{jobParameters[requestDate]}") String requestDate) {
         return stepBuilderFactory.get("simpleStep1") // simpleStep1이라는 Step을 생성하겠다
                 .tasklet(((contribution, chunkContext) -> { // Step안에서 단일로 수행될 커텀한 기능들을 선언할 때 사용
-                    log.info(">>>>> This is Step1");
+                    throw new IllegalArgumentException("step1에서 실패합니다.");
+                }))
+                .build();
+    }
+
+    @Bean
+    @JobScope
+    public Step simpleStep2(@Value("#{jobParameters[requestDate]}") String requestDate) {
+        return stepBuilderFactory.get("simpleStep2") // simpleStep1이라는 Step을 생성하겠다
+                .tasklet(((contribution, chunkContext) -> { // Step안에서 단일로 수행될 커텀한 기능들을 선언할 때 사용
+                    log.info(">>>>> This is Step2");
+                    log.info(">>>>> requestDate = {}", requestDate);
                     return RepeatStatus.FINISHED;
                 }))
                 .build();
